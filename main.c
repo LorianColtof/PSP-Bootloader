@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		pspDebugScreenSetTextColor(GREEN);	
-		printf("Booting %s...", cfg.menuentries[index]->paramKernel);
+		printf("Booting %s...\n", cfg.menuentries[index]->paramKernel);
 	}
 
 	if(index == -1) // When circle is pressed

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include <zlib.h>
-
+#include <bzlib.h>
 #include "kernel.h"
 #include "configloader.h"
 #ifndef FW150
@@ -29,7 +29,8 @@ static inline BOOL CheckKernelCompression()
 	FILE* f = fopen(kernel, "rb");
 	if(f == NULL)
 	{
-		ERROR_LOG("Cannot boot: %s does not exist\n", kernel);
+		pspDebugScreenClear();
+		ERROR_LOG("Cannot boot %s: File does not exist\n", kernel);
 		return FALSE;
 	}
 	unsigned char* magic = (unsigned char*) malloc(2);
@@ -66,6 +67,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size_t size;
 		if(buf_ == NULL || size_ == NULL)
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
 			return FALSE;
 		}
@@ -74,6 +76,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		f = fopen(kernel, "rb");
 		if(f==NULL)
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
 			return FALSE;
 		}
@@ -81,6 +84,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		buf = (void *)malloc( KERNEL_MAX_SIZE );
 		if ( buf == NULL )
 		{
+			pspDebugScreenClear();
 		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
 		    fclose(f);
 		    return FALSE;
@@ -88,6 +92,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size = fread(buf, 1, KERNEL_MAX_SIZE, f);
 		if ( size < 0 )
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
 			free( buf );
 			fclose(f);
@@ -110,6 +115,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 
 		if(buf_ == NULL || size_ == NULL)
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
 			return FALSE;
 		}
@@ -118,6 +124,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		f = gzopen(kernel, "rb");
 		if(f==NULL)
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
 			return FALSE;
 		}
@@ -125,6 +132,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		buf = (void *)malloc( KERNEL_MAX_SIZE );
 		if ( buf == NULL )
 		{
+		    pspDebugScreenClear();
 		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
 		    gzclose(f);
 		    return FALSE;
@@ -132,6 +140,7 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size = gzread(f, buf, KERNEL_MAX_SIZE);
 		if ( size < 0 )
 		{
+			pspDebugScreenClear();
 			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
 			free( buf );
 			gzclose(f);
@@ -148,12 +157,76 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 	}
 	else if(compression_type == COMPRESSION_BZIP2)
 	{
-		ERROR_LOG("BUG: %s: Did not implement Bzip2 decompression yet XD\n", __FUNCTION__);
-		return FALSE;
+		FILE* f;
+		BZFILE* bzf;
+
+		void *buf;
+		size_t size;
+		if(buf_ == NULL || size_ == NULL)
+		{
+			pspDebugScreenClear();
+			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
+			return FALSE;
+		}
+		*buf_ = NULL;
+		*size_ = 0;
+		f = fopen(kernel, "rb");
+		if(f==NULL)
+		{
+			pspDebugScreenClear();
+			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
+			return FALSE;
+		}
+
+		int error;
+		bzf = BZ2_bzReadOpen(&error, f, 0, FALSE, NULL, 0);
+		if(error != BZ_OK)
+		{
+			pspDebugScreenClear();
+			ERROR_LOG("%s: bzReadOpen Error: %d\n", __FUNCTION__, error);
+			fclose(f);
+			return FALSE;
+		}
+
+		buf = (void *)malloc( KERNEL_MAX_SIZE );
+		if ( buf == NULL )
+		{
+			pspDebugScreenClear();
+		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
+		    BZ2_bzReadClose(&error, bzf);
+			fclose(f);
+		    return FALSE;
+		}
+		size = BZ2_bzRead(&error, bzf, buf, KERNEL_MAX_SIZE);
+		if(error != BZ_STREAM_END)
+		{
+			pspDebugScreenClear();
+			ERROR_LOG("%s: bzRead Error: %d\n", __FUNCTION__, error);
+			BZ2_bzReadClose(&error, bzf);
+			fclose(f);
+			return FALSE;
+		}
+		if ( size < 0 )
+		{
+			pspDebugScreenClear();
+			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
+			free( buf );
+			fclose(f);
+			return FALSE;
+		} 
+		BZ2_bzReadClose(&error, bzf);
+		fclose(f);
+		DEBUG_LOG("%s: %d bytes loaded\n", __FUNCTION__, size );
+		  
+		*buf_ = buf;
+		*size_ = size;
+
+		return TRUE;
 	}
 	else
 	{
-		ERROR_LOG("BUG: %s:Unknown compression type: %d\n",  __FUNCTION__, compression_type);
+		pspDebugScreenClear();
+		ERROR_LOG("BUG: %s: Unknown compression type: %d\n",  __FUNCTION__, compression_type);
 		return FALSE;
 	}
 }

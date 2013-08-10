@@ -43,7 +43,7 @@
 #define BLUE                0x00ff0000
 #define GREEN               0x0000ff00
 #define RED                 0x000000ff
-#define DELAY_BEFORE_EXIT   2 * 1000 * 1000   /* 5 seconds */
+#define DELAY_BEFORE_EXIT   5 * 1000 * 1000   /* 5 seconds */
 #define DELAY_BEFORE_BOOT   1 * 1000 * 1000   /* 1 second */
 #define CONFIG_FILE         "pspboot.conf"
 #define CONFIG_MAX_PARAM    256

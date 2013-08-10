@@ -1,17 +1,15 @@
-# Object files
 *.o
-
-# Libraries
 *.lib
 *.a
-
-# Shared objects (inc. Windows DLLs)
-*.dll
 *.so
 *.so.*
 *.dylib
+*.elf
+EBOOT.PBP
+PARAM.SFO
+*.bin
+*.S
+*.org
+copy.sh	
+*.prx
 
-# Executables
-*.exe
-*.out
-*.app

@@ -8,7 +8,7 @@ MINOR_VERSION = 0
 
 INSTALL_DIR := /media/disk/PSP/GAME/pspboot
 
-ENABLE_DEBUG_LOG=0
+ENABLE_DEBUG_LOG=1
 ENABLE_ERROR_LOG=1
 ENABLE_UART3=0
 
@@ -52,7 +52,7 @@ ifdef FW150
 CFLAGS += -DFW150
 endif
 
-LIBS += -lm -lz
+LIBS += -lm -lz -lbz2
 LIBDIR =
 LDFLAGS =
 

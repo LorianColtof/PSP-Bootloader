@@ -116,49 +116,58 @@ int menuCreate(int entriescount, MENUENTRY** entries, int timeout)
 	
 
 	printMenuEntries(selected_index, entriescount, entries);
-	SceCtrlData pad, oldpad;
 	
-	sceCtrlSetSamplingCycle(0);
 	
 	BOOL done = FALSE;
-	BOOL autoboot = TRUE;
 	
+	SceCtrlData pad, oldpad;	
+	sceCtrlSetSamplingCycle(0);
 
-	pspDebugScreenEnableBackColor(TRUE);	
-	pspDebugScreenSetTextColor(GREEN);	
-	pspDebugScreenSetBackColor(BLACK);
-	pspDebugScreenSetXY(mesg_x, top_mesg_y);
-	printf("Booting selected item automatically in %d seconds\n", timeout);
-	clock_t t = clock();
-	int timeLeft = timeout;
-	const float timeoutFloat = (float) timeout;
-	float timeLeftFloat = (float) timeLeft;
-	float passed = 0;
-	while(passed < timeout)
-	{
-		passed = ceil(((float)(clock()-t))/CLOCKS_PER_SEC);
-	
-		sceCtrlReadBufferPositive(&pad, 1); 
-		if(pad.Buttons)
+	if(timeout != -1)
+	{	
+		BOOL autoboot = TRUE;
+		pspDebugScreenEnableBackColor(TRUE);	
+		pspDebugScreenSetTextColor(GREEN);	
+		pspDebugScreenSetBackColor(BLACK);
+		pspDebugScreenSetXY(mesg_x, top_mesg_y);
+		printf("Booting selected item automatically in %d seconds\n", timeout);
+		clock_t t = clock();
+		int timeLeft = timeout;
+		const float timeoutFloat = (float) timeout;
+		float timeLeftFloat = (float) timeLeft;
+		float passed = 0;
+
+		while(passed < timeout)
 		{
-			autoboot = FALSE;
+			passed = ceil(((float)(clock()-t))/CLOCKS_PER_SEC);
+	
+			sceCtrlReadBufferPositive(&pad, 1); 
+			if(pad.Buttons)
+			{
+				autoboot = FALSE;
+				pspDebugScreenSetXY(mesg_x, top_mesg_y);
+				printf("                                                            ");
+				break;
+			}
+
+			if((timeoutFloat - passed) < timeLeftFloat)
+			{
+				timeLeftFloat = (timeoutFloat - passed);
+				timeLeft = (int) timeLeftFloat;
+				pspDebugScreenSetXY(mesg_x, top_mesg_y);
+				printf("Booting selected item automatically in %d seconds\n", timeLeft);
+			}
+		
+		}
+		if(autoboot)
+		{
 			pspDebugScreenSetXY(mesg_x, top_mesg_y);
 			printf("                                                            ");
-			break;
-		}
-
-		if((timeoutFloat - passed) < timeLeftFloat)
-		{
-			timeLeftFloat = (timeoutFloat - passed);
-			timeLeft = (int) timeLeftFloat;
 			pspDebugScreenSetXY(mesg_x, top_mesg_y);
-			printf("Booting selected item automatically in %d seconds\n", timeLeft);
+			printf("Booting %s...", entries[selected_index]->paramKernel);
+			return 0;
 		}
-		
 	}
-	if(autoboot)
-		return 0;
-
 	while(!done)
 	{
 		sceCtrlReadBufferPositive(&pad, 1); 

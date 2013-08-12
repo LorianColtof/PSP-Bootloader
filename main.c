@@ -6,6 +6,7 @@
 
 #include <pspkernel.h>
 #include <pspdebug.h>
+#include <pspctrl.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -39,7 +40,9 @@ ConfigWrapper cfg;
 int main(int argc, char *argv[])
 {
 	pspDebugScreenInit();
-	
+	SceCtrlData pad;
+	sceCtrlSetSamplingCycle(0);
+	sceCtrlReadBufferPositive(&pad, 1); 
 	
 	/* Print the banner */
 	pspDebugScreenSetTextColor( RED );
@@ -63,15 +66,17 @@ int main(int argc, char *argv[])
 		goto EXIT_ERROR;
 	}
 	DEBUG_LOG("Successfully loaded config file\n");
-	DEBUG_LOG("timeout=%d\n", cfg.timeout);
 	
-
+	
+	
 	int index;
 	if(cfg.timeout == -1) cfg.timeout = 5; // default timeout
 	else if(cfg.timeout == 0) index = 0; // don't show the menu, boot first menuentry
 
+	if(pad.Buttons & PSP_CTRL_RTRIGGER) cfg.timeout = -1; //Skip the timeout
+
 	// menuCreate returns the index in menuentries which we need to boot
-	if(cfg.timeout > 0)
+	if(cfg.timeout > 0 || cfg.timeout == -1)
 		index = menuCreate(cfg.menuentriescount, cfg.menuentries, cfg.timeout);
 	else
 	{
@@ -83,7 +88,7 @@ int main(int argc, char *argv[])
 	{
 		DEBUG_LOG("Exitting...\n");
 		unloadKmodlib();
-		sleep( DELAY_BEFORE_EXIT );
+		sleep(2*1000*1000);
 		sceKernelExitGame();
 		return 0;
 	}

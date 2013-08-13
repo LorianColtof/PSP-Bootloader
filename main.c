@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	  }
 	  DEBUG_LOG("Successfully loaded kmodlib\n");
 #endif
-	cfg.timeout = -1;
+	cfg.timeout = -2;
 	if(!loadConfig(&cfg, CONFIG_FILE))
 	{
 		ERROR_LOG("Failed to load config file\n");
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	
 	
 	int index;
-	if(cfg.timeout == -1) cfg.timeout = 5; // default timeout
+	if(cfg.timeout == -2) cfg.timeout = 5; // default timeout
 	else if(cfg.timeout == 0) index = 0; // don't show the menu, boot first menuentry
 
 	if(pad.Buttons & PSP_CTRL_RTRIGGER) cfg.timeout = -1; //Skip the timeout
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		pspDebugScreenSetTextColor(GREEN);	
-		printf("Booting %s...\n", cfg.menuentries[index]->paramKernel);
+		printf("\tBooting %s...\n", cfg.menuentries[index]->paramKernel);
 	}
 
 	if(index == -1) // When circle is pressed
@@ -93,11 +93,29 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	
-	bootKernel(cfg.menuentries[index]);
+	char* error_msg = bootKernel(cfg.menuentries[index]);
 	//Should not return
+	
 	
 	// if anything goes wrong
 	ERROR_LOG("Error booting kernel\n");
+	SET_COLOR_ERROR_MESSAGE();
+	printf("\n\tError while booting");
+	if(cfg.timeout != 0)
+	{
+		if(error_msg != NULL)
+			printf(": %s. Exitting...\n", error_msg);
+		else
+			printf(". Exitting...\n");
+	}
+	else
+	{
+		if(error_msg != NULL)
+			printf(": %s.\n\tExitting...\n", error_msg);
+		else
+			printf(".\n\tExitting...\n");
+	}
+	
 	unloadKmodlib();
 	goto EXIT_ERROR;
 

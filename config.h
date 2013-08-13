@@ -54,6 +54,7 @@
 #define printf              pspDebugScreenPrintf
 #define sleep(t)            sceKernelDelayThread( (t) )
 #define SET_COLOR_MESSAGE(); pspDebugScreenEnableBackColor(FALSE); pspDebugScreenSetBackColor(BLACK); pspDebugScreenSetTextColor(GREEN);
+#define SET_COLOR_ERROR_MESSAGE(); pspDebugScreenEnableBackColor(FALSE); pspDebugScreenSetBackColor(BLACK); pspDebugScreenSetTextColor(RED);
 #define SET_COLOR_SELECTED(); pspDebugScreenEnableBackColor(TRUE); pspDebugScreenSetBackColor(WHITE); pspDebugScreenSetTextColor(BLACK);
 #define SET_COLOR_DESELECTED(); pspDebugScreenEnableBackColor(FALSE); pspDebugScreenSetBackColor(BLACK); pspDebugScreenSetTextColor(WHITE);
 #define SCREEN_SET_X(x) pspDebugScreenSetXY(x, pspDebugScreenGetY());

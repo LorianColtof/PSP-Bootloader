@@ -20,6 +20,7 @@
 static int compression_type;
 static char* kernel;
 static char* cmdline;
+static char* error_msg;
 #ifdef CONFIG_UART3
 static int baud;
 #endif
@@ -29,15 +30,14 @@ static inline BOOL CheckKernelCompression()
 	FILE* f = fopen(kernel, "rb");
 	if(f == NULL)
 	{
-		pspDebugScreenClear();
-		ERROR_LOG("Cannot boot %s: File does not exist\n", kernel);
+		error_msg="File does not exist";
 		return FALSE;
 	}
 	unsigned char* magic = (unsigned char*) malloc(2);
 	size_t count = fread(magic, 1, 2, f);
 	if(count!=2)
 	{
-		ERROR_LOG( "Read error.\n" );
+		error_msg="Read error";
 		return FALSE;	
 	}
 	if(magic[0]==0x1F && magic[1]==0x8B) 
@@ -67,8 +67,9 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size_t size;
 		if(buf_ == NULL || size_ == NULL)
 		{
-			pspDebugScreenClear();
-			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
+			error_msg = (char*) malloc(100);
+			memset(error_msg, 0, 100);
+			sprintf(error_msg, "BUG:%s:%s:%d. Please report with this message!", __FILE__, __FUNCTION__, __LINE__);
 			return FALSE;
 		}
 		*buf_ = NULL;
@@ -76,24 +77,22 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		f = fopen(kernel, "rb");
 		if(f==NULL)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
+			error_msg="File does not exist";
 			return FALSE;
 		}
 
 		buf = (void *)malloc( KERNEL_MAX_SIZE );
 		if ( buf == NULL )
 		{
-			pspDebugScreenClear();
-		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
+			error_msg="Failed to allocate buffer";
 		    fclose(f);
 		    return FALSE;
 		}
 		size = fread(buf, 1, KERNEL_MAX_SIZE, f);
 		if ( size < 0 )
 		{
-			pspDebugScreenClear();
-			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
+			error_msg="Read error";
 			free( buf );
 			fclose(f);
 			return FALSE;
@@ -115,8 +114,10 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 
 		if(buf_ == NULL || size_ == NULL)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
+			error_msg = (char*) malloc(100);
+			memset(error_msg, 0, 100);
+			sprintf(error_msg, "BUG:%s:%s:%d. Please report with this message!", __FILE__, __FUNCTION__, __LINE__);
 			return FALSE;
 		}
 		*buf_ = NULL;
@@ -124,24 +125,24 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		f = gzopen(kernel, "rb");
 		if(f==NULL)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
+			error_msg="File does not exist";
 			return FALSE;
 		}
 
 		buf = (void *)malloc( KERNEL_MAX_SIZE );
 		if ( buf == NULL )
 		{
-		    pspDebugScreenClear();
 		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
+			error_msg="Failed to allocate buffer";
 		    gzclose(f);
 		    return FALSE;
 		}
 		size = gzread(f, buf, KERNEL_MAX_SIZE);
 		if ( size < 0 )
 		{
-			pspDebugScreenClear();
-			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
+			ERROR_LOG("%s: Read error\n", __FUNCTION__ );
+			error_msg="Read error";
 			free( buf );
 			gzclose(f);
 			return FALSE;
@@ -164,8 +165,10 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size_t size;
 		if(buf_ == NULL || size_ == NULL)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: buf_ == NULL or size_ == NULL\n", __FUNCTION__);
+			error_msg = (char*) malloc(100);
+			memset(error_msg, 0, 100);
+			sprintf(error_msg, "BUG:%s:%s:%d. Please report with this message!", __FILE__, __FUNCTION__, __LINE__);
 			return FALSE;
 		}
 		*buf_ = NULL;
@@ -173,8 +176,8 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		f = fopen(kernel, "rb");
 		if(f==NULL)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("BUG: %s: f==NULL but no error occurred in CheckKernelCompression()\n", __FUNCTION__);
+			error_msg="File does not exist";
 			return FALSE;
 		}
 
@@ -182,8 +185,10 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		bzf = BZ2_bzReadOpen(&error, f, 0, FALSE, NULL, 0);
 		if(error != BZ_OK)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("%s: bzReadOpen Error: %d\n", __FUNCTION__, error);
+			error_msg = (char*) malloc(100);
+			memset(error_msg, 0, 100);
+			sprintf(error_msg, "Cannot open BZIP2 file: error code %d", error);
 			fclose(f);
 			return FALSE;
 		}
@@ -191,8 +196,8 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		buf = (void *)malloc( KERNEL_MAX_SIZE );
 		if ( buf == NULL )
 		{
-			pspDebugScreenClear();
 		    ERROR_LOG("%s: Failed to allocate buffer\n", __FUNCTION__);
+			error_msg="Failed to allocate buffer";
 		    BZ2_bzReadClose(&error, bzf);
 			fclose(f);
 		    return FALSE;
@@ -200,16 +205,18 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 		size = BZ2_bzRead(&error, bzf, buf, KERNEL_MAX_SIZE);
 		if(error != BZ_STREAM_END)
 		{
-			pspDebugScreenClear();
 			ERROR_LOG("%s: bzRead Error: %d\n", __FUNCTION__, error);
+			error_msg = (char*) malloc(100);
+			memset(error_msg, 0, 100);
+			sprintf(error_msg, "Cannot read BZIP2 file: error code %d", error);
 			BZ2_bzReadClose(&error, bzf);
 			fclose(f);
 			return FALSE;
 		}
 		if ( size < 0 )
 		{
-			pspDebugScreenClear();
-			ERROR_LOG("%s: Failed to read file\n", __FUNCTION__ );
+			ERROR_LOG("%s: Read error\n", __FUNCTION__ );
+			error_msg="Read error";
 			free( buf );
 			fclose(f);
 			return FALSE;
@@ -225,8 +232,10 @@ static inline BOOL loadKernel(void** buf_, int* size_)
 	}
 	else
 	{
-		pspDebugScreenClear();
 		ERROR_LOG("BUG: %s: Unknown compression type: %d\n",  __FUNCTION__, compression_type);
+		error_msg = (char*) malloc(100);
+		memset(error_msg, 0, 100);
+		sprintf(error_msg, "BUG:%s:%s:%d. Please report with this message!", __FILE__, __FUNCTION__, __LINE__);
 		return FALSE;
 	}
 }
@@ -333,7 +342,7 @@ int transferControlWrapper(TransferControlParams * params_)
 	return 0;
 }
 #endif
-BOOL bootKernel(MENUENTRY* entry)
+char* bootKernel(MENUENTRY* entry)
 {
 #ifdef ENABLE_DEBUG_LOG
 	pspDebugScreenClear();
@@ -343,8 +352,8 @@ BOOL bootKernel(MENUENTRY* entry)
 	kernel = entry->paramKernel;
 	cmdline = entry->paramCmd;
 	DEBUG_LOG("Booting %s...\n", kernel);
-	if(!CheckKernelCompression()) return FALSE;
-	if(!loadKernel(&params.buf, &params.size)) return FALSE;
+	if(!CheckKernelCompression()) return error_msg;
+	if(!loadKernel(&params.buf, &params.size)) return error_msg;
 	sleep(DELAY_BEFORE_BOOT);
 #ifndef FW150
 	  /* Switch to kernel mode to initiate the transfer */
@@ -355,5 +364,5 @@ BOOL bootKernel(MENUENTRY* entry)
 	  transferControl( params.buf, params.size );
 #endif
 
-	return TRUE;
+	return NULL;
 }

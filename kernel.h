@@ -16,7 +16,7 @@ typedef struct
 } TransferControlParams;
 
 
-BOOL bootKernel(MENUENTRY* entry);
+char* bootKernel(MENUENTRY* entry);
 #ifdef __cplusplus
 {
 #endif

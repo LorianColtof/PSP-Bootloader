@@ -94,8 +94,7 @@ BOOL loadConfig(ConfigWrapper* cfg, char* conf_file)
 				inMenuEntry = TRUE;
 				menuentries[entryindex] = (MENUENTRY*) malloc(sizeof(MENUENTRY));
 	
-				char *rest = substr(buf, 10, strlen(buf)-9);;
-				strtrim(rest);
+				char *rest = strtrim(substr(buf, 10, strlen(buf)-9));
 				char *namestuff;
 				if(rest[strlen(rest)-1] != '{') 
 				{	
@@ -105,7 +104,7 @@ BOOL loadConfig(ConfigWrapper* cfg, char* conf_file)
 				else
 					namestuff = substr(rest, 0, strlen(rest)-1);
 				
-				strtrim(namestuff);
+				namestuff = strtrim(namestuff);
 				if(namestuff[0] != '\"' || namestuff[strlen(namestuff)-1] != '\"')
 				{
 					DEBUG_LOG("Syntax error at line %d\n", line);

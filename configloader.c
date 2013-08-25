@@ -82,7 +82,7 @@ BOOL loadConfig(ConfigWrapper* cfg, char* conf_file)
 	for ( line = 1; fgets( buf, bufLen, fconf ) != NULL; line++ )
 	{
 		buf[strlen(buf)-1] = (char) 0;
-		strtrim(buf);
+		buf = strtrim(buf);
 
 		if(buf[0] == '#' || buf[0] == ' ' || buf[0] == '\n' || buf[0] == '\r'|| strlen(buf) == 0) 
 			continue;
